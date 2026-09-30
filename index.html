@@ -107,6 +107,8 @@ function mk(k){
  });
  db.m[k]=c;
 }
+function spread(g,id,old,nw){Object.keys(db.m).forEach(function(k){if(k<=cur)return;db.m[k][g].forEach(function(y){if(y.id===id&&!y.v&&y.a===old)y.a=nw})})}
+function fill(){Object.keys(db.m).sort().forEach(function(k){var p=db.m[ym(k,-1)];if(!p)return;['exp','rec'].forEach(function(g){db.m[k][g].forEach(function(y){if(y.v||y.a!=='')return;p[g].forEach(function(z){if(z.id===y.id&&z.a!=='')y.a=z.a})})})})}
 function later(f){Object.keys(db.m).sort().forEach(function(k){if(k>=cur)f(db.m[k],k)})}
 function addItem(g,it){later(function(m,k){if(it.o&&k!==cur)return;m[g].push(Object.assign({},it,{c:0}))})}
 function del(g,id){later(function(m){m[g]=m[g].filter(function(x){return x.id!==id})})}
@@ -150,7 +152,7 @@ function row(g,x){
  cb.onchange=function(){x.c=cb.checked?1:0;r.classList.toggle('done',!!x.c);save();sum()};
  var sub=x.d+'日'+(g==='exp'?' · '+payL(x.p):'')+(x.o?' · この月のみ':'');
  var inp=h('input',{type:'number',inputMode:'numeric',placeholder:'金額',value:x.a===''?'':x.a});
- inp.oninput=function(){x.a=inp.value===''?'':num(inp.value);save();sum()};
+ inp.oninput=function(){var old=x.a;x.a=inp.value===''?'':num(inp.value);if(!x.v)spread(g,x.id,old,x.a);save();sum()};
  var ed=h('button',{className:'ib',textContent:'✎'});ed.onclick=function(){openF(g,x)};
  var dl=h('button',{className:'ib',textContent:'✕'});
  dl.onclick=function(){if(confirm('「'+x.n+'」を削除します（'+lbl(cur)+'以降）。よろしいですか？')){del(g,x.id);save();render()}};
@@ -228,12 +230,12 @@ $('ex').onclick=function(){
 $('im').onclick=function(){
  var ta=$('ta');
  if(ta.style.display!=='block'){ta.style.display='block';ta.value='';say('バックアップを貼り付けて、もう一度押してください');return}
- try{var o=JSON.parse(ta.value);if(!o.m||!o.s)throw 0;db=o;if(!db.acc)db.acc={m:'',s:''};fillAcc();save();ta.style.display='none';cur=db.s;render();say('復元しました')}catch(e){say('形式が正しくありません')}
+ try{var o=JSON.parse(ta.value);if(!o.m||!o.s)throw 0;db=o;if(!db.acc)db.acc={m:'',s:''};fill();fillAcc();save();ta.style.display='none';cur=db.s;render();say('復元しました')}catch(e){say('形式が正しくありません')}
 };
 function setAcc(){db.acc={m:$('an1').value.trim(),s:$('an2').value.trim()};save();render()}
 $('an1').onchange=$('an2').onchange=setAcc;
 function fillAcc(){var a=db.acc||{};$('an1').value=a.m||'';$('an2').value=a.s||''}
-load();if(!db.acc)db.acc={m:'',s:''};fillAcc();cur=db.s;save();render();
+load();if(!db.acc)db.acc={m:'',s:''};fill();fillAcc();cur=db.s;save();render();
 </script>
 </body>
 </html>
