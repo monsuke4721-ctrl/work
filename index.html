@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="支払い管理">
+<title>支払い管理</title>
+<style>
+:root{--bg:#f2f5f7;--card:#fff;--ink:#17232e;--sub:#6a7884;--line:#dde3e8;--ok:#0f766e;--ng:#c2410c;--acc:#17232e;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10171d;--card:#19232c;--ink:#e8eef3;--sub:#8fa0ad;--line:#2a3742;--ok:#4fd1c0;--ng:#fb923c;--acc:#e8eef3}}
+:root[data-theme="dark"]{--bg:#10171d;--card:#19232c;--ink:#e8eef3;--sub:#8fa0ad;--line:#2a3742;--ok:#4fd1c0;--ng:#fb923c;--acc:#e8eef3}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,"Hiragino Sans","Noto Sans JP",sans-serif}
+main{max-width:520px;margin:0 auto;padding:12px 14px 40px}
+button,input,select,textarea{font:inherit;color:var(--ink)}
+.tabs{display:flex;gap:6px;margin-bottom:8px}
+.tab{flex:1;padding:10px 4px;border:1px solid var(--line);background:var(--card);border-radius:10px;font-weight:600}
+.tab.on{background:var(--acc);color:var(--bg);border-color:var(--acc)}
+.tab small{display:block;font-weight:400;font-size:12px;opacity:.75}
+.nav{display:flex;gap:6px;margin-bottom:12px}
+.nav button{flex:1;padding:8px;border:1px solid var(--line);background:var(--card);border-radius:10px}
+.nav button:disabled{opacity:.35}
+.sum{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:6px}
+.al{background:#fff1e8;color:#9a3412;border-radius:8px;padding:8px 10px;margin-bottom:8px;font-weight:600;font-size:14px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .al{background:#3a2314;color:#fdba74}}
+.big{font-size:32px;font-weight:700;letter-spacing:-.5px}
+.ok{color:var(--ok)}.ng{color:var(--ng)}
+.row{display:flex;justify-content:space-between;color:var(--sub);font-size:14px;margin-top:3px}
+.nd{margin:8px 4px 0;font-size:14px;font-weight:600}
+h2{font-size:13px;margin:16px 4px 6px;color:var(--sub);font-weight:600}
+.list{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.it{display:grid;grid-template-columns:26px 1fr 96px 28px 28px;gap:6px;align-items:center;padding:9px 10px;border-top:1px solid var(--line)}
+.it:first-child{border-top:0}
+.it.b2{grid-template-columns:1fr 130px}
+.it input[type=checkbox]{width:22px;height:22px;accent-color:var(--ok)}
+.nm small{display:block;color:var(--sub);font-size:12px}
+input[type=number],input[type=text],select{width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.it input[type=number]{text-align:right}
+.it.done .nm{opacity:.5}
+.ib{border:0;background:none;color:var(--sub);font-size:16px;padding:4px}
+.add{width:100%;padding:10px;border:0;border-top:1px solid var(--line);background:none;color:var(--ok);font-weight:600}
+textarea{width:100%;height:80px;border:1px solid var(--line);border-radius:10px;background:var(--card);padding:8px}
+.bk{margin-top:22px;display:flex;gap:8px}
+.bk button{flex:1;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--card)}
+#ta{display:none;margin-top:8px;font:12px monospace}
+.msg{color:var(--sub);font-size:13px;margin:6px 4px;min-height:18px}
+#fm{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:flex-end;justify-content:center;z-index:9}
+#fm>div{background:var(--card);width:100%;max-width:520px;border-radius:16px 16px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px))}
+#fm label{display:block;font-size:13px;color:var(--sub);margin:8px 0 3px}
+#fm .cb{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:14px}
+#fm .cb input{width:20px;height:20px}
+.fb{display:flex;gap:8px;margin-top:14px}
+.fb button{flex:1;padding:11px;border-radius:10px;border:1px solid var(--line);background:var(--bg);font-weight:600}
+.fb #fs{background:var(--acc);color:var(--bg);border-color:var(--acc)}
+</style>
+</head>
+<body>
+<main>
+<div class="tabs" id="tabs"></div>
+<div class="nav"><button id="pv">◀ 前の月へ戻る</button><button id="nx">次の月へ ▶</button></div>
+<div id="view"></div>
+<div class="bk"><button id="ex">バックアップをコピー</button><button id="im">貼り付けて復元</button></div>
+<textarea id="ta" placeholder="バックアップを貼り付けて、もう一度「貼り付けて復元」を押す"></textarea>
+<div class="msg" id="msg"></div>
+</main>
+<div id="fm"><div>
+<b id="ft">項目を追加</b>
+<label>項目名</label><input type="text" id="fn">
+<div id="wa"><label>金額</label><input type="number" inputmode="numeric" id="fa"></div>
+<label>日にち（1〜31）</label><input type="number" inputmode="numeric" id="fd">
+<div id="wp"><label>支払い方法</label><select id="fp"><option value="r">りそな銀行から引き落とし</option><option value="m">MUFG経由（りそなから振込→MUFGで引き落とし）</option><option value="t">りそなから振込</option></select></div>
+<div id="wc"><label class="cb"><input type="checkbox" id="fo">この月だけ（翌月以降に引き継がない）</label>
+<label class="cb"><input type="checkbox" id="fv">金額が毎月変わる（翌月は空欄にする）</label></div>
+<div class="fb"><button id="fc">キャンセル</button><button id="fs">保存</button></div>
+</div></div>
+<script>
+var KEY='paymgr_v2',db=null,cur='',F=null;
+var PAY={r:'りそな引落',m:'MUFG経由',t:'りそなから振込'};
+var TPL={bal:'',memo:'',exp:[
+{id:'e1',n:'住宅ローン',d:27,a:89565,p:'r'},
+{id:'e2',n:'三井住友カード',d:27,a:'',p:'r',v:1},
+{id:'e3',n:'MUFGカード',d:10,a:'',p:'m',v:1},
+{id:'e4',n:'住信SBI',d:27,a:136000,p:'t'}],
+rec:[{id:'i1',n:'給与',d:26,a:''},{id:'i2',n:'家賃',d:20,a:45000},{id:'i3',n:'保育料',d:20,a:2000}]};
+function $(i){return document.getElementById(i)}
+function h(t,p,k){var e=document.createElement(t);for(var i in p)e[i]=p[i];(k||[]).forEach(function(c){e.append(c)});return e}
+function num(v){var n=Number(v);return isFinite(n)?n:0}
+function yen(n){return (n<0?'-':'')+Math.abs(n).toLocaleString('ja-JP')+'円'}
+function ym(s,n){var p=s.split('-'),d=new Date(+p[0],+p[1]-1+n,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
+function lbl(k){return Number(k.split('-')[1])+'月'}
+function load(){try{db=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+ if(!db||!db.m){var n=new Date();db={m:{},s:n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')}}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){}}
+function mk(k){
+ if(db.m[k])return;
+ var src=db.m[ym(k,-1)]||TPL,c=JSON.parse(JSON.stringify(src));
+ c.bal='';c.memo='';
+ ['exp','rec'].forEach(function(g){
+  c[g]=c[g].filter(function(x){return !x.o});
+  c[g].forEach(function(x){x.c=0;if(x.v)x.a=''});
+ });
+ db.m[k]=c;
+}
+function later(f){Object.keys(db.m).sort().forEach(function(k){if(k>=cur)f(db.m[k],k)})}
+function addItem(g,it){later(function(m,k){if(it.o&&k!==cur)return;m[g].push(Object.assign({},it,{c:0}))})}
+function del(g,id){later(function(m){m[g]=m[g].filter(function(x){return x.id!==id})})}
+function calc(m){
+ var inc=0,mu=0,ro=0,mun=0;
+ m.rec.forEach(function(x){if(x.c)inc+=num(x.a)});
+ m.exp.forEach(function(x){var a=num(x.a);if(x.p==='m'){mu+=a;if(!x.c)mun+=a}else ro+=a});
+ var a=num(m.bal)+inc-mu;
+ return {inc:inc,mu:mu,ro:ro,mun:mun,a:a,b:a-ro};
+}
+function nextDue(m){
+ var t=new Date();t.setHours(0,0,0,0);var best=null;
+ m.exp.forEach(function(x){
+  if(!(num(x.a)>0))return;
+  var d=new Date(t.getFullYear(),t.getMonth(),x.d);
+  if(d<t)d=new Date(t.getFullYear(),t.getMonth()+1,x.d);
+  var n=Math.round((d-t)/864e5);
+  if(!best||n<best.n)best={n:n,x:x};
+ });
+ return best;
+}
+function sum(){
+ var m=db.m[cur],c=calc(m),el=$('sum'),nd=nextDue(m);
+ el.textContent='';
+ if(c.mun>0)el.append(h('div',{className:'al',textContent:'MUFGへ '+yen(c.mun)+' の振込が必要です'}));
+ var bad=c.b<0;
+ el.append(
+  h('div',{className:'row',textContent:'27日の引き落とし後（りそな）'}),
+  h('div',{className:'big '+(bad?'ng':'ok'),textContent:yen(c.b)}),
+  h('div',{className:'ng',textContent:bad?'不足 '+yen(-c.b):'',style:bad?'font-weight:700':'display:none'}),
+  h('div',{className:'row'},[h('span',{textContent:'MUFG振込後'}),h('span',{className:c.a<0?'ng':'',textContent:yen(c.a)})]),
+  h('div',{className:'row'},[h('span',{textContent:'残高＋確認済みの収入'}),h('span',{textContent:yen(num(m.bal)+c.inc)})]),
+  h('div',{className:'row'},[h('span',{textContent:'MUFG振込額'}),h('span',{textContent:yen(c.mu)})]),
+  h('div',{className:'row'},[h('span',{textContent:'ローン・カード・SBI振込'}),h('span',{textContent:yen(c.ro)})])
+ );
+ if(nd)el.append(h('div',{className:'nd',textContent:'次の支払い: '+nd.x.n+' '+nd.x.d+'日（'+(nd.n===0?'本日':'あと'+nd.n+'日')+'）'}));
+}
+function row(g,x){
+ var r=h('div',{className:'it'+(x.c?' done':'')});
+ var cb=h('input',{type:'checkbox',checked:!!x.c});
+ cb.onchange=function(){x.c=cb.checked?1:0;r.classList.toggle('done',!!x.c);save();sum()};
+ var sub=x.d+'日'+(g==='exp'?' · '+PAY[x.p]:'')+(x.o?' · この月のみ':'');
+ var inp=h('input',{type:'number',inputMode:'numeric',placeholder:'金額',value:x.a===''?'':x.a});
+ inp.oninput=function(){x.a=inp.value===''?'':num(inp.value);save();sum()};
+ var ed=h('button',{className:'ib',textContent:'✎'});ed.onclick=function(){openF(g,x)};
+ var dl=h('button',{className:'ib',textContent:'✕'});
+ dl.onclick=function(){if(confirm('「'+x.n+'」を削除します（'+lbl(cur)+'以降）。よろしいですか？')){del(g,x.id);save();render()}};
+ [cb,h('div',{className:'nm'},[x.n,h('small',{textContent:sub})]),inp,ed,dl].forEach(function(e){r.append(e)});
+ return r;
+}
+function group(g,title){
+ var m=db.m[cur],l=h('div',{className:'list'});
+ m[g].forEach(function(x){l.append(row(g,x))});
+ var b=h('button',{className:'add',textContent:'＋ 項目を追加'});b.onclick=function(){openF(g,null)};
+ l.append(b);
+ $('view').append(h('h2',{textContent:title}),l);
+}
+function render(){
+ mk(db.s);mk(ym(db.s,1));
+ var two=[db.s,ym(db.s,1)];
+ if(two.indexOf(cur)<0)cur=db.s;
+ var m=db.m[cur],v=$('view');v.textContent='';
+ v.append(h('div',{className:'sum',id:'sum'}));
+ var bi=h('input',{type:'number',inputMode:'numeric',placeholder:'0',value:m.bal});
+ bi.oninput=function(){m.bal=bi.value===''?'':num(bi.value);save();sum()};
+ v.append(h('h2',{textContent:'りそな銀行の残高（MUFG振込前。入金確認前の収入は含めない）'}),
+  h('div',{className:'list'},[h('div',{className:'it b2'},[h('div',{className:'nm',textContent:'現在の残高'}),bi])]));
+ group('rec','収入（✓＝入金確認。確認した分だけ加算）');
+ group('exp','支出（MUFG経由の✓＝振込完了）');
+ var ta=h('textarea',{placeholder:'この月のメモ',value:m.memo||''});
+ ta.oninput=function(){m.memo=ta.value;save()};
+ v.append(h('h2',{textContent:lbl(cur)+'のメモ'}),ta);
+ sum();
+ var t=$('tabs');t.textContent='';
+ two.forEach(function(k,i){
+  var b=h('button',{className:'tab'+(k===cur?' on':'')});
+  b.append(lbl(k),h('small',{textContent:i?'翌月':'当月'}));
+  b.onclick=function(){cur=k;render()};t.append(b);
+ });
+ $('pv').disabled=!db.m[ym(db.s,-1)];
+}
+function openF(g,x){
+ F={g:g,x:x};
+ $('ft').textContent=x?'項目を編集':'項目を追加';
+ $('fn').value=x?x.n:'';$('fa').value='';$('fd').value=x?x.d:'';
+ $('fp').value=x&&x.p?x.p:'r';$('fo').checked=false;$('fv').checked=false;
+ $('wa').style.display=$('wc').style.display=x?'none':'block';
+ $('wp').style.display=g==='exp'?'block':'none';
+ $('fm').style.display='flex';
+}
+$('fc').onclick=function(){$('fm').style.display='none'};
+$('fs').onclick=function(){
+ var n=$('fn').value.trim(),d=num($('fd').value);
+ if(!n||d<1||d>31){alert('項目名と日にち（1〜31）を入力してください');return}
+ var g=F.g,p=$('fp').value;
+ if(F.x){
+  var id=F.x.id;
+  later(function(m){m[g].forEach(function(y){if(y.id===id){y.n=n;y.d=d;if(g==='exp')y.p=p}})});
+ }else{
+  var it={id:'x'+Date.now(),n:n,d:d,a:$('fa').value===''?'':num($('fa').value),o:$('fo').checked?1:0,v:$('fv').checked?1:0};
+  if(g==='exp')it.p=p;
+  addItem(g,it);
+ }
+ save();$('fm').style.display='none';render();
+};
+$('nx').onclick=function(){
+ db.s=ym(db.s,1);cur=db.s;mk(ym(db.s,1));
+ var lim=ym(db.s,-10);Object.keys(db.m).forEach(function(k){if(k<lim)delete db.m[k]});
+ save();render();
+};
+$('pv').onclick=function(){var p=ym(db.s,-1);if(!db.m[p])return;db.s=p;cur=p;save();render()};
+function say(t){$('msg').textContent=t}
+$('ex').onclick=function(){
+ var s=JSON.stringify(db),ta=$('ta');
+ function fb(){ta.style.display='block';ta.value=s;ta.select();say('全選択してコピーしてください')}
+ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(s).then(function(){say('コピーしました。メモアプリなどに貼り付けて保管してください')},fb);else fb();
+};
+$('im').onclick=function(){
+ var ta=$('ta');
+ if(ta.style.display!=='block'){ta.style.display='block';ta.value='';say('バックアップを貼り付けて、もう一度押してください');return}
+ try{var o=JSON.parse(ta.value);if(!o.m||!o.s)throw 0;db=o;save();ta.style.display='none';cur=db.s;render();say('復元しました')}catch(e){say('形式が正しくありません')}
+};
+load();cur=db.s;save();render();
+</script>
+</body>
+</html>
