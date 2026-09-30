@@ -113,11 +113,10 @@ function later(f){Object.keys(db.m).sort().forEach(function(k){if(k>=cur)f(db.m[
 function addItem(g,it){later(function(m,k){if(it.o&&k!==cur)return;m[g].push(Object.assign({},it,{c:0}))})}
 function del(g,id){later(function(m){m[g]=m[g].filter(function(x){return x.id!==id})})}
 function calc(m){
- var inc=0,mu=0,ro=0,mun=0;
+ var inc=0,ex=0,mun=0;
  m.rec.forEach(function(x){if(x.c)inc+=num(x.a)});
- m.exp.forEach(function(x){var a=num(x.a);if(x.p==='m'){mu+=a;if(!x.c)mun+=a}else ro+=a});
- var a=num(m.bal)+inc-mu;
- return {inc:inc,mu:mu,ro:ro,mun:mun,a:a,b:a-ro};
+ m.exp.forEach(function(x){var a=num(x.a);ex+=a;if(x.p==='m'&&!x.c)mun+=a});
+ return {inc:inc,ex:ex,mun:mun,d:inc-ex};
 }
 function nextDue(m){
  var t=new Date();t.setHours(0,0,0,0);var best=null;
@@ -131,18 +130,15 @@ function nextDue(m){
  return best;
 }
 function sum(){
- var m=db.m[cur],c=calc(m),el=$('sum'),nd=nextDue(m);
+ var m=db.m[cur],c=calc(m),el=$('sum'),nd=nextDue(m),bad=c.d<0;
  el.textContent='';
  if(c.mun>0)el.append(h('div',{className:'al',textContent:S()+'へ '+yen(c.mun)+' の振込が必要です'}));
- var bad=c.b<0;
  el.append(
-  h('div',{className:'row',textContent:'27日の引き落とし後（'+M()+'）'}),
-  h('div',{className:'big '+(bad?'ng':'ok'),textContent:yen(c.b)}),
-  h('div',{className:'ng',textContent:bad?'不足 '+yen(-c.b):'',style:bad?'font-weight:700':'display:none'}),
-  h('div',{className:'row'},[h('span',{textContent:S()+'振込後'}),h('span',{className:c.a<0?'ng':'',textContent:yen(c.a)})]),
-  h('div',{className:'row'},[h('span',{textContent:'残高＋確認済みの収入'}),h('span',{textContent:yen(num(m.bal)+c.inc)})]),
-  h('div',{className:'row'},[h('span',{textContent:S()+'振込額'}),h('span',{textContent:yen(c.mu)})]),
-  h('div',{className:'row'},[h('span',{textContent:'引落・振込（'+M()+'）'}),h('span',{textContent:yen(c.ro)})])
+  h('div',{className:'row',textContent:'収入 − 支出'}),
+  h('div',{className:'big '+(bad?'ng':'ok'),textContent:yen(c.d)}),
+  h('div',{className:'ng',textContent:bad?'不足 '+yen(-c.d):'',style:bad?'font-weight:700':'display:none'}),
+  h('div',{className:'row'},[h('span',{textContent:'確認済みの収入'}),h('span',{textContent:yen(c.inc)})]),
+  h('div',{className:'row'},[h('span',{textContent:'支出合計'}),h('span',{textContent:yen(c.ex)})])
  );
  if(nd)el.append(h('div',{className:'nd',textContent:'次の支払い: '+nd.x.n+' '+nd.x.d+'日（'+(nd.n===0?'本日':'あと'+nd.n+'日')+'）'}));
 }
@@ -172,11 +168,7 @@ function render(){
  if(two.indexOf(cur)<0)cur=db.s;
  var m=db.m[cur],v=$('view');v.textContent='';
  v.append(h('div',{className:'sum',id:'sum'}));
- var bi=h('input',{type:'number',inputMode:'numeric',placeholder:'0',value:m.bal});
- bi.oninput=function(){m.bal=bi.value===''?'':num(bi.value);save();sum()};
- v.append(h('h2',{textContent:M()+'の残高（'+S()+'振込前。入金確認前の収入は含めない）'}),
-  h('div',{className:'list'},[h('div',{className:'it b2'},[h('div',{className:'nm',textContent:'現在の残高'}),bi])]));
- group('rec','収入（✓＝入金確認。確認した分だけ加算）');
+ group('rec','収入（金額を入れて✓＝入金確認。✓した分だけ加算）');
  group('exp','支出（'+S()+'経由の✓＝振込完了）');
  var ta=h('textarea',{placeholder:'この月のメモ',value:m.memo||''});
  ta.oninput=function(){m.memo=ta.value;save()};
