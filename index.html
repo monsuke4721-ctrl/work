@@ -61,6 +61,8 @@ textarea{width:100%;height:80px;border:1px solid var(--line);border-radius:10px;
 <div class="tabs" id="tabs"></div>
 <div class="nav"><button id="pv">◀ 前の月へ戻る</button><button id="nx">次の月へ ▶</button></div>
 <div id="view"></div>
+<h2>口座名の設定（この端末内にだけ保存）</h2>
+<div class="list"><div class="it b2"><div class="nm">メイン口座の名前</div><input type="text" id="an1" placeholder="メイン口座"></div><div class="it b2"><div class="nm">別口座の名前</div><input type="text" id="an2" placeholder="別口座"></div></div>
 <div class="bk"><button id="ex">バックアップをコピー</button><button id="im">貼り付けて復元</button></div>
 <textarea id="ta" placeholder="バックアップを貼り付けて、もう一度「貼り付けて復元」を押す"></textarea>
 <div class="msg" id="msg"></div>
@@ -70,20 +72,22 @@ textarea{width:100%;height:80px;border:1px solid var(--line);border-radius:10px;
 <label>項目名</label><input type="text" id="fn">
 <div id="wa"><label>金額</label><input type="number" inputmode="numeric" id="fa"></div>
 <label>日にち（1〜31）</label><input type="number" inputmode="numeric" id="fd">
-<div id="wp"><label>支払い方法</label><select id="fp"><option value="r">りそな銀行から引き落とし</option><option value="m">MUFG経由（りそなから振込→MUFGで引き落とし）</option><option value="t">りそなから振込</option></select></div>
+<div id="wp"><label>支払い方法</label><select id="fp"><option value="r"></option><option value="m"></option><option value="t"></option></select></div>
 <div id="wc"><label class="cb"><input type="checkbox" id="fo">この月だけ（翌月以降に引き継がない）</label>
 <label class="cb"><input type="checkbox" id="fv">金額が毎月変わる（翌月は空欄にする）</label></div>
 <div class="fb"><button id="fc">キャンセル</button><button id="fs">保存</button></div>
 </div></div>
 <script>
 var KEY='paymgr_v2',db=null,cur='',F=null;
-var PAY={r:'りそな引落',m:'MUFG経由',t:'りそなから振込'};
+function M(){return (db.acc&&db.acc.m)||'メイン口座'}
+function S(){return (db.acc&&db.acc.s)||'別口座'}
+function payL(p){return p==='m'?S()+'経由':M()+(p==='t'?'から振込':'から引落')}
 var TPL={bal:'',memo:'',exp:[
-{id:'e1',n:'住宅ローン',d:27,a:89565,p:'r'},
-{id:'e2',n:'三井住友カード',d:27,a:'',p:'r',v:1},
-{id:'e3',n:'MUFGカード',d:10,a:'',p:'m',v:1},
-{id:'e4',n:'住信SBI',d:27,a:136000,p:'t'}],
-rec:[{id:'i1',n:'給与',d:26,a:''},{id:'i2',n:'家賃',d:20,a:45000},{id:'i3',n:'保育料',d:20,a:2000}]};
+{id:'e1',n:'固定引落A',d:27,a:'',p:'r'},
+{id:'e2',n:'カードA',d:27,a:'',p:'r',v:1},
+{id:'e3',n:'カードB（別口座経由）',d:10,a:'',p:'m',v:1},
+{id:'e4',n:'口座間振込',d:27,a:'',p:'t'}],
+rec:[{id:'i1',n:'給与',d:26,a:''},{id:'i2',n:'収入B',d:20,a:''},{id:'i3',n:'収入C',d:20,a:''}]};
 function $(i){return document.getElementById(i)}
 function h(t,p,k){var e=document.createElement(t);for(var i in p)e[i]=p[i];(k||[]).forEach(function(c){e.append(c)});return e}
 function num(v){var n=Number(v);return isFinite(n)?n:0}
@@ -127,16 +131,16 @@ function nextDue(m){
 function sum(){
  var m=db.m[cur],c=calc(m),el=$('sum'),nd=nextDue(m);
  el.textContent='';
- if(c.mun>0)el.append(h('div',{className:'al',textContent:'MUFGへ '+yen(c.mun)+' の振込が必要です'}));
+ if(c.mun>0)el.append(h('div',{className:'al',textContent:S()+'へ '+yen(c.mun)+' の振込が必要です'}));
  var bad=c.b<0;
  el.append(
-  h('div',{className:'row',textContent:'27日の引き落とし後（りそな）'}),
+  h('div',{className:'row',textContent:'27日の引き落とし後（'+M()+'）'}),
   h('div',{className:'big '+(bad?'ng':'ok'),textContent:yen(c.b)}),
   h('div',{className:'ng',textContent:bad?'不足 '+yen(-c.b):'',style:bad?'font-weight:700':'display:none'}),
-  h('div',{className:'row'},[h('span',{textContent:'MUFG振込後'}),h('span',{className:c.a<0?'ng':'',textContent:yen(c.a)})]),
+  h('div',{className:'row'},[h('span',{textContent:S()+'振込後'}),h('span',{className:c.a<0?'ng':'',textContent:yen(c.a)})]),
   h('div',{className:'row'},[h('span',{textContent:'残高＋確認済みの収入'}),h('span',{textContent:yen(num(m.bal)+c.inc)})]),
-  h('div',{className:'row'},[h('span',{textContent:'MUFG振込額'}),h('span',{textContent:yen(c.mu)})]),
-  h('div',{className:'row'},[h('span',{textContent:'ローン・カード・SBI振込'}),h('span',{textContent:yen(c.ro)})])
+  h('div',{className:'row'},[h('span',{textContent:S()+'振込額'}),h('span',{textContent:yen(c.mu)})]),
+  h('div',{className:'row'},[h('span',{textContent:'引落・振込（'+M()+'）'}),h('span',{textContent:yen(c.ro)})])
  );
  if(nd)el.append(h('div',{className:'nd',textContent:'次の支払い: '+nd.x.n+' '+nd.x.d+'日（'+(nd.n===0?'本日':'あと'+nd.n+'日')+'）'}));
 }
@@ -144,7 +148,7 @@ function row(g,x){
  var r=h('div',{className:'it'+(x.c?' done':'')});
  var cb=h('input',{type:'checkbox',checked:!!x.c});
  cb.onchange=function(){x.c=cb.checked?1:0;r.classList.toggle('done',!!x.c);save();sum()};
- var sub=x.d+'日'+(g==='exp'?' · '+PAY[x.p]:'')+(x.o?' · この月のみ':'');
+ var sub=x.d+'日'+(g==='exp'?' · '+payL(x.p):'')+(x.o?' · この月のみ':'');
  var inp=h('input',{type:'number',inputMode:'numeric',placeholder:'金額',value:x.a===''?'':x.a});
  inp.oninput=function(){x.a=inp.value===''?'':num(inp.value);save();sum()};
  var ed=h('button',{className:'ib',textContent:'✎'});ed.onclick=function(){openF(g,x)};
@@ -168,10 +172,10 @@ function render(){
  v.append(h('div',{className:'sum',id:'sum'}));
  var bi=h('input',{type:'number',inputMode:'numeric',placeholder:'0',value:m.bal});
  bi.oninput=function(){m.bal=bi.value===''?'':num(bi.value);save();sum()};
- v.append(h('h2',{textContent:'りそな銀行の残高（MUFG振込前。入金確認前の収入は含めない）'}),
+ v.append(h('h2',{textContent:M()+'の残高（'+S()+'振込前。入金確認前の収入は含めない）'}),
   h('div',{className:'list'},[h('div',{className:'it b2'},[h('div',{className:'nm',textContent:'現在の残高'}),bi])]));
  group('rec','収入（✓＝入金確認。確認した分だけ加算）');
- group('exp','支出（MUFG経由の✓＝振込完了）');
+ group('exp','支出（'+S()+'経由の✓＝振込完了）');
  var ta=h('textarea',{placeholder:'この月のメモ',value:m.memo||''});
  ta.oninput=function(){m.memo=ta.value;save()};
  v.append(h('h2',{textContent:lbl(cur)+'のメモ'}),ta);
@@ -188,6 +192,7 @@ function openF(g,x){
  F={g:g,x:x};
  $('ft').textContent=x?'項目を編集':'項目を追加';
  $('fn').value=x?x.n:'';$('fa').value='';$('fd').value=x?x.d:'';
+ var o=$('fp').options;o[0].text=M()+'から引き落とし';o[1].text=S()+'経由（'+M()+'から振込→'+S()+'で引き落とし）';o[2].text=M()+'から振込';
  $('fp').value=x&&x.p?x.p:'r';$('fo').checked=false;$('fv').checked=false;
  $('wa').style.display=$('wc').style.display=x?'none':'block';
  $('wp').style.display=g==='exp'?'block':'none';
@@ -223,9 +228,12 @@ $('ex').onclick=function(){
 $('im').onclick=function(){
  var ta=$('ta');
  if(ta.style.display!=='block'){ta.style.display='block';ta.value='';say('バックアップを貼り付けて、もう一度押してください');return}
- try{var o=JSON.parse(ta.value);if(!o.m||!o.s)throw 0;db=o;save();ta.style.display='none';cur=db.s;render();say('復元しました')}catch(e){say('形式が正しくありません')}
+ try{var o=JSON.parse(ta.value);if(!o.m||!o.s)throw 0;db=o;if(!db.acc)db.acc={m:'',s:''};fillAcc();save();ta.style.display='none';cur=db.s;render();say('復元しました')}catch(e){say('形式が正しくありません')}
 };
-load();cur=db.s;save();render();
+function setAcc(){db.acc={m:$('an1').value.trim(),s:$('an2').value.trim()};save();render()}
+$('an1').onchange=$('an2').onchange=setAcc;
+function fillAcc(){var a=db.acc||{};$('an1').value=a.m||'';$('an2').value=a.s||''}
+load();if(!db.acc)db.acc={m:'',s:''};fillAcc();cur=db.s;save();render();
 </script>
 </body>
 </html>
